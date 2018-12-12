@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="myTestServer" targetNamespace="http://tempuri.org/wsdl/" xmlns:wsdlns="http://tempuri.org/wsdl/" xmlns:typens="http://tempuri.org/xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:stk="http://schemas.microsoft.com/soap-toolkit/wsdl-extension" xmlns="http://schemas.xmlsoap.org/wsdl/">
+<types>
+<xsd:schema targetNamespace="http://tempuri.org/xsd" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" elementFormDefault="qualified">
+</xsd:schema>
+</types>
+<message name="sayRequest">
+<part name="url" type="xs:string" />
+</message>
+<message name="sayResponse">
+<part name="say" type="xs:string" />
+</message>
+<message name="say2Request">
+<part name="token" type="xs:string" />
+<part name="param" type="xs:string" />
+</message>
+<message name="say2Response">
+<part name="say2" type="xs:string" />
+</message>
+<portType name='myTestServer'>
+<operation name="say" >
+<input message="sayRequest" />
+<output message="sayResponse" />
+</operation>
+<operation name="say2" >
+<input message="say2Request" />
+<output message="say2Response" />
+</operation>
+</portType>
+<binding name='myTestServerBinding' type='wsdltns:myTestServer'>
+<stk:binding preferredEncoding="utf-8"/><soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http" />
+<operation name="say">
+<soap:operation soapAction="http://tempuri.org/action/myTestServer.say"/>
+<input>
+<soap:body use="encoded" namespace="urn:myTestServer" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+</input>
+<output>
+<soap:body use="encoded" namespace="urn:myTestServer"
+                                     encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+</output>
+</operation>
+<operation name="say2">
+<soap:operation soapAction="http://tempuri.org/action/myTestServer.say2"/>
+<input>
+<soap:body use="encoded" namespace="urn:myTestServer" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+</input>
+<output>
+<soap:body use="encoded" namespace="urn:myTestServer"
+                                     encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+</output>
+</operation>
+</binding>
+<service name="myTestServer">
+<port name="myTestServerPort" binding="wsdlns:myTestServerBinding">
+<soap:address location='http://localhost/API/RequestMethod/soap/wsdl/RunServer.php' />
+</port>
+</service>
+</definitions>
