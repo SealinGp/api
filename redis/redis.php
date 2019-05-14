@@ -34,7 +34,7 @@ class redis
         self::$_redis = new \Redis();
         $conn =  self::$_redis->connect($conf['host'], $conf['port']);
         $auth = $conf['password'] ? self::$_redis->auth($conf['password']) : 'no auth';
-        $result = (!$conn || !$auth) ? false : true;
+        $result = !(!$conn || !$auth);
         unset($conn,$auth);
         return $result;
     }
