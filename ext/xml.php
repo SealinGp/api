@@ -78,13 +78,8 @@ class xml
      */
     public function set_file(string $file):xml
     {
-        $this->file = ($file && 'xml' == $this->ext($file)) ?
+        $this->file = ($file && 'xml' === $this->ext($file)) ?
             $file : '';
-    
-        $this->file = (string) (
-            !($file && 'xml' == $this->ext($file)) ?: $file
-        );
-             
         
         unset($file);
         return $this;
@@ -99,10 +94,10 @@ class xml
     /** alter xml file
      *  rmk:root tag start with second (rewrite file)
      *
-     * @param  array $arr muti-relation array
+     * @param array $arr muti-relation array
      * ej1 :xml file content:<a>  <b> <c> 2 </c> </b>  </a> ==> $arr = ['b' => [ 'c' => 'value'] ];
      * ej2 :xml file content:<a> <b> <c>2</c> <c>3</c> </b> </a> ==> $arr = ['b' => [ 'c' => ['value1',''value2]] ];
-     * @param  string $file file path
+     * @param string $file file path
      * @return bool
      * */
     public function rewrite(array $arr, string $file = ''):bool
@@ -117,7 +112,7 @@ class xml
         
         
         //xml array rewrite to xml file
-        $return = ('' == $xml[0] || is_null($arr)) ?
+        $return = ('' == $xml[0] || NULL === $arr) ?
             false                                                   :
             $this->write($this->to_str([ $xml[0] => $arr ]),$file);
         
@@ -125,11 +120,10 @@ class xml
         return $return;
     }
     
-    
     /** alter tag value from xml file
      * rmk:root tag start with second (rewrite file)
      *
-     * @param  $arr one dimension array, '/' means the deep of dimension, '--index' means the index of the same level and name tag
+     * @param array  $arr one dimension array, '/' means the deep of dimension, '--index' means the index of the same level and name tag
      * ej1: xml文件:<a> <b> <c> 2 </c> </b> <a> ==>  $arr = ['b/c' => 'value'];
      * ej2 :xml文件:<a>  <b>2</b> <b>3</b>  </a> ==> $arr = ['b--1' => 'value'] ;
      * @return array keys:
@@ -255,7 +249,7 @@ class xml
         $file = $file ? : $this->file;
         $this->clean($file);
         if ( !@is_dir(dirname($file))  ||
-            $this->ext($file) != 'xml' ||
+            $this->ext($file) !== 'xml' ||
             false === @simplexml_load_string($str)  ) {
             return false;
         }
@@ -271,21 +265,20 @@ class xml
     
     /**transfer xml string to array
      *
-     * @param string $mixed xml file path or xml string
+     * @param string $xmlStr xml string
      * @return array
      */
-    public  function to_arr(string $mixed):array
+    public  function to_arr(string $xmlStr):array
     {   //check
-        $mixed = $mixed ? : $this->file;
-        if (!$mixed  ||
-            false ===
-            ( $mixed = file_exists($mixed) ?
-                @simplexml_load_file($mixed) : @simplexml_load_string($mixed)  )) {
+        if (empty($xmlStr) && file_exists($this->file)) {
+            $xmlStr = file_get_contents($this->file);
+        }
+        if (false === ( $xmlStr = simplexml_load_string($xmlStr)  )) {
             return [];
-        }//transfer
-        $mixed = json_decode(json_encode($mixed), true);
-        $mixed = is_null($mixed) ? [] : $mixed;
-        return $mixed;
+        }
+        //transfer
+        $xmlStr = json_decode(json_encode($xmlStr), true);
+        return $xmlStr ? : [];
     }
     
     /* transfer xml array to xml string
@@ -312,6 +305,14 @@ class xml
         }
         unset($DOMDocument,$DOMElement,$xmlArr);
         return $return;
+    }
+    
+    /* transfer xml array to xml file
+ * @param array $xmlArr
+ * */
+    public function to_file(array $xmlArr, string $file = ''):bool
+    {
+        return $this->write($this->to_str($xmlArr), $file ? : $this->file);
     }
     
     //loop find the tag , tag value ,tag attribute, tag attribute value and set them
@@ -369,16 +370,6 @@ class xml
             //element insert pairs of attributes
             $domEle->appendChild($attri);
         }
-    }
-    
-   
-    
-    /* transfer xml array to xml file
-     * @param array $xmlArr
-     * */
-    public function arrToFile(array $xmlArr, string $file = ''):bool
-    {
-        return $this->write($this->to_str($xmlArr), $file ? : $this->file);
     }
     
     //hook function
