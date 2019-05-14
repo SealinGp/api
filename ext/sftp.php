@@ -69,7 +69,7 @@ class sftp extends fileOperate
                 self::$_remoteDir = $path;
                 break;
             case 'l':
-                if ('' == $path) {
+                if ('' === $path) {
                     self::$_localDir = null;
                     return;
                 }
@@ -84,6 +84,8 @@ class sftp extends fileOperate
      * down file (single)
      * @param string $remoteFile
      * @param string $localFile
+     * @param string $mode d:download | u:upload
+     * @return bool
      */
     public static function down(string $remoteFile,string $localFile,string $mode = 'd'):bool
     {
@@ -91,12 +93,12 @@ class sftp extends fileOperate
         parent::clean($remoteFile);
         parent::clean($localFile);
         $remoteFile = self::$_remoteDir ? self::$_remoteDir.'/'.$remoteFile :  self::$_sftpPathPrefix.'/'. $remoteFile;
-        $localFile = self::$_localDir ? self::$_localDir.'/'.$localFile  : $localFile;
-        if ($mode == 'd') {
-            $left = &$remoteFile;
+        $localFile  = self::$_localDir ? self::$_localDir.'/'.$localFile  : $localFile;
+        if ($mode === 'd') {
+            $left  = &$remoteFile;
             $right = &$localFile;
         } else {
-            $left = &$localFile;
+            $left  = &$localFile;
             $right = &$remoteFile;
         }
         return is_file($left) && @copy($left, $right);
@@ -113,40 +115,38 @@ class sftp extends fileOperate
      * mention : skip file existed in local and not count it
      *
      * @param string  $desDir file destination dir(save file downloaded)
+     * @param string $type d:download | u:upload
      * @return int $num down file's number
      */
     public static function downAll(string $desDir,string $type = 'd'):int
     {
         //check
+        $ifDown = 'd' === $type;
         if ( !self::check() ||
             !in_array($type,['d','u']) ||
-            !('d'== $type ? self::$_remoteDir : self::$_localDir)) {
+            !($ifDown ? self::$_remoteDir : self::$_localDir)) {
             return 0;
         }
         //list files
         parent::clean($desDir);
         $desDir = $desDir.'/';
-        $remote = self::listFile('d'==$type ? '' : $desDir ,'r');
-        $local = self::listFile('d'==$type ? $desDir : '','l');
-        if ('d' == $type) {
-            $left = $remote;
-            $right = $local;
-        } else {
-            $left = $local;
-            $right = $remote;
-        }//complement of (left-right)
-        $mid = array_diff($left,$right);
+        $remote = self::listFile($ifDown ? '' : $desDir ,'r');
+        $local  = self::listFile($ifDown ? $desDir : '','l');
+        //complement of (left-right)
+        $ifDown ?
+            $mid = array_diff($remote,$local):
+            $mid = array_diff($local,$remote);
         //start down
         $num = 0;
         foreach ($mid as $v) {
-            if ('d'==$type) {
-                $left = $v;
+            if ($ifDown) {
+                $left  = $v;
                 $right = $desDir . $v;
             } else {
-                $left = $desDir . $v;
+                $left  = $desDir . $v;
                 $right = $v;
             }
-            (true === self::down($left, $right,$type)) && $num += 1;
+            self::down($left, $right, $type) && $num += 1;
         }
         return $num;
     }
@@ -162,12 +162,12 @@ class sftp extends fileOperate
         return self::downAll($remoteDir,'u');
     }
 
-    //get remote location path
+    //get current remote location path
     public static function getCuRemotePath()
     {
         return strtr(self::$_remoteDir,[self::$_sftpPathPrefix => '']);
     }
-    //get local localtion path
+    //get current local location path
     public static function getCuLocalPath()
     {
         return realpath(self::$_localDir);
@@ -175,10 +175,10 @@ class sftp extends fileOperate
     /**
      * list all the files from $path
      * @param string $path  remote/local dir path
-     * @param $type string r:remote / l:local
-     * @param $showDir bool show dir(true) or file(false)
-     * @param $addpath add path (true) or do not add path
-     * @param  $time in show file situation if sort by alter time
+     * @param string $type  r:remote / l:local
+     * @param bool $showDir  show dir(true) or file(false)
+     * @param bool $addpath add path (true) or do not add path
+     * @param int $time in show file situation if sort by alter time
      * @return array
      */
     public static function listFile(string $path,string $type = 'r', bool $showDir = false, bool $addpath = false,string $time = ''):array
@@ -188,11 +188,12 @@ class sftp extends fileOperate
         switch ($type) {
             case 'r':
                 if (!self::check()) return [];
-                $path = self::$_remoteDir ? self::$_remoteDir.'/'.$path  : self::$_sftpPathPrefix. '/'.
-                    ((''==$path || '.'==$path) ? '.':$path) ;
+                $path = self::$_remoteDir ?
+                    self::$_remoteDir.'/'.$path  :
+                    self::$_sftpPathPrefix. '/'. ((''===$path || '.'===$path) ? '.':$path) ;
                 break;
             case 'l':
-                $path = self::$_localDir ? self::$_localDir .'/'.$path :  realpath($path);
+                $path = self::$_localDir ? (self::$_localDir .'/'.$path) : realpath($path);
                 break;
             default:
                 return [];
@@ -212,27 +213,25 @@ class sftp extends fileOperate
         //start read
         if ($handle = opendir($path)) {
             while (false !== ($file = readdir($handle))) {
-                if ($file != "." && $file != "..") {
-                    $file = $path.$file;
-                    if (is_file($file) ) {//文件
-                        $filetime[] = date("Y-m-d H:i:s", filemtime($file));
-                        if ($type == 'r') {//是否显示完整路径(远程|本地)
-                            $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
-                            $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
-                        } elseif ($type == 'l') {
-                            $file = !$addpath ? strtr($file,[$path => '']): $file;
-                        }
-                        array_push($arr['file'], $file);
-                    } elseif (is_dir($file)){//目录
-                        if ($type == 'r') {//是否显示完整路径(远程|本地)
-                            $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
-                            $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
-                        } elseif ($type == 'l') {
-                            $file = !$addpath ? strtr($file,[$path => '']): $file;
-                        }
-                        array_push($arr['dir'], $file);
+                if ($file === "." || $file === "..") continue;
+                $file = $path.$file;
+                if (is_file($file) ) {//文件
+                    $filetime[] = date("Y-m-d H:i:s", filemtime($file));
+                    if ($type === 'r') {//是否显示完整路径(远程|本地)
+                        $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
+                        $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
+                    } elseif ($type === 'l') {
+                        $file = !$addpath ? strtr($file,[$path => '']): $file;
                     }
-
+                    $arr['file'][] = $file;
+                } elseif (is_dir($file)){//目录
+                    if ($type === 'r') {//是否显示完整路径(远程|本地)
+                        $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
+                        $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
+                    } elseif ($type === 'l') {
+                        $file = !$addpath ? strtr($file,[$path => '']): $file;
+                    }
+                    $arr['dir'][] = $file;
                 }
             }
             closedir($handle);
@@ -245,18 +244,17 @@ class sftp extends fileOperate
     //quick sort
     public static function myQsort(array $arr):array
     {
-        if (count($arr)<=1) {
+        $len = count($arr);
+        if ($len <= 1) {
             return $arr;
         }
-        $learr=[];
-        $riarr=[];
-        $first=$arr[0];
-        for ($i=1;$i<count($arr);$i++) {
-            if ($arr[$i]<=$first) {
-                $learr[]=$arr[$i];
-            } else {
-                $riarr[]=$arr[$i];
-            }
+        $learr = [];
+        $riarr = [];
+        $first = $arr[0];
+        for ($i = 1;$i < $len;$i++) {
+            $arr[$i] <= $first ?
+                $learr[] = $arr[$i]:
+                $riarr[] = $arr[$i];
         }
         return  array_merge(self::myQsort($learr), [$first], self::myQsort($riarr));
     }
@@ -275,7 +273,7 @@ class sftp extends fileOperate
     }
 
 
-    /**把远程文件 数组按照时间排序(按照eBay文件名定制)
+    /**把远程文件 数组按照时间排序(根据eBay文件名规则定制)
      *@param array $arr 远程文件数值键 数组列表
      *@return array $time_arr 远程文件时间排序数值键数组 0=>XXXX.zip (旧->新  0->length)
      * */
