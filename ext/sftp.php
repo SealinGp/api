@@ -209,14 +209,14 @@ class sftp extends fileOperate
             'dir' => [],
             'file'=> [],
         ];
-        $filetime = [];
+        $fileTime = [];
         //start read
         if ($handle = opendir($path)) {
             while (false !== ($file = readdir($handle))) {
                 if ($file === "." || $file === "..") continue;
                 $file = $path.$file;
                 if (is_file($file) ) {//文件
-                    $filetime[] = date("Y-m-d H:i:s", filemtime($file));
+                    $fileTime[] = date("Y-m-d H:i:s", filemtime($file));
                     if ($type === 'r') {//是否显示完整路径(远程|本地)
                         $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
                         $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
@@ -224,7 +224,8 @@ class sftp extends fileOperate
                         $file = !$addpath ? strtr($file,[$path => '']): $file;
                     }
                     $arr['file'][] = $file;
-                } elseif (is_dir($file)){//目录
+                }
+                if (is_dir($file)){//目录
                     if ($type === 'r') {//是否显示完整路径(远程|本地)
                         $file = strtr($file,[self::$_sftpPathPrefix.'/' => '']);
                         $file = !$addpath ? strtr($file,[strtr($path,[self::$_sftpPathPrefix.'/'  => ''])=>'']) : $file;
@@ -236,7 +237,7 @@ class sftp extends fileOperate
             }
             closedir($handle);
         }
-        ('alterTime' === $time) && array_multisort($filetime, SORT_ASC, SORT_STRING, $arr['file']);
+        ('alterTime' === $time) && array_multisort($fileTime, SORT_ASC, SORT_STRING, $arr['file']);
         return $showDir ? $arr['dir'] : $arr['file'];
     }
 
@@ -261,15 +262,15 @@ class sftp extends fileOperate
 
     /**
      * make dir in sftp
-     * @param string $dirname
+     * @param string $dirName
      * @return bool
      */
-    public static function makeDir($dirname):bool
+    public static function makeDir(string $dirName):bool
     {
         if (!self::check()) return false;
-        parent::clean($dirname);
-        $dirname = self::$_remoteDir ? strtr(self::$_remoteDir,[self::$_sftpPathPrefix => '']).'/'.$dirname : $dirname;
-        return @ssh2_sftp_mkdir(self::$_sftp, $dirname);
+        parent::clean($dirName);
+        $dirName = self::$_remoteDir ? strtr(self::$_remoteDir,[self::$_sftpPathPrefix => '']).'/'.$dirName : $dirName;
+        return @ssh2_sftp_mkdir(self::$_sftp, $dirName);
     }
 
 
@@ -281,12 +282,12 @@ class sftp extends fileOperate
     {
         $date = date("Y-", time());
         //时间数值键 数组 0 => 2017xxx
-        $date_arr=[];
+        $date_arr  = [];
         //时间关联键数组   2017xxx=>远程文件名
         $date_file = [];
         //对数组$arr中的值进行处理
         foreach ($arr as $k1 => $v1) {
-            $str = str_replace('.zip', '', strstr($v1, $date, false));
+            $str  = str_replace('.zip', '', strstr($v1, $date, false));
             $str1 =  str_replace('-', '', substr($str, 0, -9));
             $date_file[$str1] = $v1;
             $date_arr[$k1] = $str1;
