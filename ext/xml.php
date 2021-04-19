@@ -273,6 +273,7 @@ class xml
         if (empty($xmlStr) && file_exists($this->file)) {
             $xmlStr = file_get_contents($this->file);
         }
+        
         if (false === ( $xmlStr = simplexml_load_string($xmlStr)  )) {
             return [];
         }

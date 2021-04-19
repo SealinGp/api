@@ -33,7 +33,7 @@ class sftp extends fileOperate
         if (array_keys($login) != ['host','port','user','pass']) {
             return false;
         }
-        if ( !(self::$_resource = @ssh2_connect($login['host'], $login['port']) ) ||
+        if ( !(self::$_resource = ssh2_connect($login['host'], $login['port']) ) ||
             !ssh2_auth_password(self::$_resource, $login['user'], $login['pass'])) {
             return false;
         }//init
@@ -46,6 +46,8 @@ class sftp extends fileOperate
     {
         return self::$_resource && self::$_sftp;
     }
+    
+
 
     /**set remote/local dir suffix
      * mention : set $path = '' or $path = 'path/to/other' if change/remove dir suffix
@@ -199,11 +201,12 @@ class sftp extends fileOperate
                 return [];
                 break;
         }
-        parent::clean($path);
-        $path = $path .'/';
         if (!is_dir($path)) {
             return [];
         }
+        parent::clean($path);
+        $path = $path .'/';
+        'l' === $type && $path = '/'.$path;
         //save dir and file and file's alter time
         $arr = [
             'dir' => [],

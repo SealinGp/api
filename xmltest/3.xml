@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<product>
+  <skuNum>3</skuNum>
+  <itemName>name</itemName>
+  <itemId>123</itemId>
+  <itemCount>1</itemCount>
+  <itemInfo>
+    <weight>2.3</weight>
+    <where>广州/上海/天津</where>
+  </itemInfo>
+</product>
