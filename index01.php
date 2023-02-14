@@ -6,10 +6,10 @@ $time1 = new DateTime('now');
 //ebay导入/导出效率计算
 $sftp = new \API\ext\sftp();
 $conn = $sftp::connect([
-    'host' => '129.226.68.117',
-    'port' => '22',
-    'user' => 'ubuntu',
-    'pass' => 'Zhangqiang2607'
+    'host' => '129.226.68.119',
+    'port' => '222',
+    'user' => 'xx',
+    'pass' => 'xx'
 ]);
 $sftp::setSuffixDir('/home/ubuntu/xmltest','r');
 $sftp::downAll('./xmltest');
